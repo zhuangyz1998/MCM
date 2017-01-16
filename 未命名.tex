@@ -47,6 +47,7 @@ The circle in Figure \ref{meterial} looks like a face.
 \begin{figure}
 \centering
 \includegraphics[width = 10cm]{meterial.png}
+\includegraphics[width = 10cm]{graph.jpg}
 \caption{This looks like UML.}
 \label{meterial}
 \end{figure}
@@ -94,12 +95,32 @@ g + h &= i
 This is part of
 a paper\footnote{This is a footnote.}
 
-\begin{tabular}{|c|lr|}
+The first four letters of the alphabet are in Table \ref{alpha}.
+
+\begin{table}
+\centering
+\begin{tabular}{|c|l|r|}
 \hline
-Centered & Left & Right \\
+Centered & \multicolumn{2}{c|}{Spread out} \\
 \hline
 0 & 1 & 2\\
 1 & $x$ & $x^2$\\
 \hline
 \end{tabular}
+\caption{Some Letters.}
+\label{alpha}
+\end{table}
+
+It was shown in \cite{Te} that termites eat wood.
+
+
+\begin{thebibliography}{99}
+\bibitem{Carp}
+Carpentwe, Bob.  \textsl{The Life of Ants.}
+Springer-Verlag, Berlin, 1994.
+
+\bibitem{Te}
+Terwilliger, Sam.  \textsl{Termites.}
+Prentice Hall, New York, 2004.
+\end{thebibliography}
 \end{document}
