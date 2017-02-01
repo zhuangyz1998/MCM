@@ -1,0 +1,753 @@
+
+%======================问题介绍====================================
+\tableofcontents
+\newpage
+
+\section{Introduction}
+A barrier toll system (also known as an open toll system) is a method of collecting tolls on highways using toll barriers at regularly spaced intervals on the toll road's mainline. Since we don't concern the ramp tolls which sit at the entrances or exits of the highway,this toll system only appear in the middle where cars flow in at a high speed and flow out at a relatively high speed to continue their journey if there's no serious congestion.The toll plaza refers to the area where the process of queuing,paying tolls and merging back into regular freeways with less lanes  happens.The efficiency and other qualities of the toll plaza are crucial to American Turnpike system.
+\subsection{Restatement of the Problem}
+%\renewcommand{\labelitemi}{\ding{43}}
+We're required to build a mathematical model to analyze the overall performance of the following area of the toll plaza with the characteristics of shape, size and merging pattern before we design another solution that can outperform the current implemented ones. We decompose the problem into two sub-problems:
+\begin{enumerate}[(1)]
+\item
+Build a model that can simulate the whole merging process
+\item 
+Propose a mathematical criterion system to determine the performance of the current toll plaza design and the existence of improved solutions. 
+\end{enumerate}
+
+In the first step, we define what shape, size and merging pattern mean to the design and then we model the driver behavior towards particular merging area circumstance to simulate the overall merging process.Inputs contain the flow-in distributions of the cars after tollbooths and their transition between different velocity modes to generate the total traffic flux which is the output.Then we list other factors that may be overlooked in the previous simulation.
+
+In the second step, we evaluate the level of accident prevention, throughput,total cost and other outputs we consider representative based on our simulation. Then we alter the current design in the dimensions of shape, size and merging pattern to generate possible improved versions. After that, we use fuzzy synthetic evaluation method to determine whether they're "better".
+
+At last, we try to adjust our model to different initial state such as different levels of traffic flux. We also consider the influence of the amount of the autonomous vehicles and the proportions of different types of tollbooths.
+\subsection{Literature Review}
+It is not uncommon for local governments to set up tollbooths on highways. In fact, tolls can be used to control traffic flow and to increase revenue for local governments. Nevertheless, the presence of tollbooths will definitely slow down highway traffic. This is particularly true when tollbooths are set up on the highway rather than behind the entrance and exit ramps. Perhaps the most well-known model of this kind is the cellular automaton based Biham-Middleton-Levine(BML) model of two-dimensional city traffic.In particular, Nagel and Schreckenberg proposed a model of (one-dimensional) highway traffic. In addition to the regular acceleration and deceleration, they model the realistic behavior of car drivers by allowing them to apply their breaks in a stochastic manner. Recently, Chowdhury and Schadschneider (CS) incorporated the one-dimensional highway traffic model of Nagel and Schreckenberg as well as the two-dimensional BML model together to study microscopic dynamics of city traffic.Besides, to reduce the interruption time caused by tollbooths and minimize the dissatisfactory of customers, previous researches have designed the optimal number of tollbooths for different toll plazas based on Queuing Theory and Hydrodynamics Theory. 
+
+In this paper, we mainly discuss what the merging area contributes to the output traffic flow.So there's no need for us to analyze the situations before the tollbooths in detail except their influence on the distribution of car flux starting from the tollbooths.
+
+
+
+\section{Assumptions and Justifications}
+To simplify the problem,we make the following basic general assumptions,each of which is properly justified.If there's a need to specify additional assumptions in discussion of particular part of the model,we'll mention them in corresponding sections.
+\begin{enumerate}[(1)]
+\item
+In our model, we only consider the highways as completely flat, with no slopes. This assumption greatly simplifies our model and allows us to focus on the nature of the problem. 
+\item
+Each lane only allows one vehicle to pass at a time.
+\item
+Drivers choose their behaviors out of their own interests and the surrounding situations.Drivers are unaware of the whole situation of the road.
+\item
+All vehicles have the same length.
+\item
+All lanes have the same width.
+\item
+All drivers are competent and rational which indicates that he will always put safety into account and be familiar with the basic traffic rules.We'll come back to this assumption in section 5.
+\item
+The tolling delay at different tollbooths are the same.We define it as $T_{average}$.New Jersey Turnpike has accepted E-ZPass on every tollbooths since 2011,so it's a reasonable assumption.
+\end{enumerate}
+
+
+
+
+\section{Notations}
+All the variables,constants and others used in this paper are listed in Table1 and Table2.
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+Symbol &Definition & Units\\
+\hline
+$p_{slow}$&Possibility that a vehicle randomly deceerates&unitless\\
+\hline
+$a_+$&The acceleration rate of a vehicle&cell/$timestep^2$\\
+\hline
+$a_-$&The normal deceleration rate of a vehicle&cell/$timestep^2$\\
+\hline
+$a_{break}$&The sharp deceleration rate of a vehicle&cell/$timestep^2$\\
+\hline
+$v_{max}$&Maximum speed allowed on highways of a vehicle&cell/$timestep$\\
+\hline
+$w$&A coefficient relates cost and size&dollar/$m^2$\\
+\hline
+\end{tabular}
+\caption{Constants}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+Symbol &Definition & Units\\
+\hline
+$\lambda$&Expectancy of posson-distribution&unitless\\
+\hline
+$B$&Number of tollbooths&unitless\\
+\hline
+$L$&Number of travel lanes&unitless\\
+\hline
+$A_i$&Number of egress lanes corresponding to ith merging point&unitless\\
+\hline
+$STO$&Single egress lane to one merging point model&\\
+\hline
+$DTO$&Double egress lanes to one merging point model&\\
+\hline
+$D$&Straight distance between a tollbooth and its related merging point&cell\\
+\hline
+$S$&Surface area of the toll plaza following area after tollbooth&$m^2$\\
+\hline
+$d_{merge}$&Straight distance of merging observation area along the lane&$cell/timestep$\\
+\hline
+$t$&Time&$timestep$\\
+\hline
+$v_t$&Speed of a vehicle at the $t$th timestep&$cell/timestep$\\
+\hline
+$gapf(t)$&Front gap of a vehicle at the $t$th timestep&$cell/timestep$\\
+\hline
+$v_0$&Speed at the joining cell of acceleration and merging observation area&$cell/timestep$\\
+\hline
+$v_{f_t}$&Speed of the front car at the $t$th timestep &$cell/timestep$\\
+\hline
+$v_{b_t}$&Speed of the back car at the $t$th timestep &$cell/timestep$\\
+\hline
+$p_{risk}$&Possibility that a vehicle brakes&$unitless$\\
+\hline
+$N_{in}$&Numbers of vehicles per hour passing the tollbooths&$unitless$\\
+\hline
+$N$&the number of vehicles per hour passing the merging point&$unitless$\\
+\hline
+$N_i$&Throughput of th $i$th merging point&$unitless$\\
+\hline
+$N_{delay}$&Number of the dalayed cars per hour&$unitless$\\
+\hline
+$Cost$&Total cost of the design&$dollar$\\
+\hline
+$F_i$&relative deviation of the $i$th rule&$unitless$\\
+\hline
+$a_{ij}$&Value of the $j$th criterion of the $i$th rule&$uncertain$\\
+\hline
+$u_{j}^0$&Value of the $j$th criterion of the ideal scheme&$uncertain$\\
+\hline
+$r_{ij}$&relative deviation of the $j$th criterion of the $i$th rule&$unitless$\\
+\hline
+$v_j$&coefficient of variation of the $j$th criterion&$unitless$\\
+\hline
+$w_j$&weight of the $j$th criterion&$unitless$\\
+\hline
+\end{tabular}
+\caption{Variables}
+\end{table}
+
+
+\section{Merging Area Model for common toll plaza design}
+ We start with the idea of the basic model. Then we present the cellular automaton and explain the algorithm. Finally, we introduce and briefly explain other possible factors affecting our model which we omit due to the restriction of time and coverage.
+ \subsection{Components of Merging Area Model}
+ After the tollbooths, the roadway narrows back from a number of lanes equal to the number of tollbooths, to its normal width, a section we call the merging area.It's clear that this process of "fan-in"determines largely on how the roads are organized which make up the geometry components as well as how the drivers react to this structure which makes up the drivers' behavior components.
+ \subsubsection{Geometry components}
+ \begin{itemize}
+\item{\textbf{Shape}}
+
+We define the shape of the merging area as how the lanes after merging out are placed compared with the egress lanes shooting out of the tollbooths.One common choice is to always merge out the rightmost (or leftmost) L lanes. Since the desired number of freeway lanes are fixed,cars can also merge out  the middle L lanes. Another possibility is a transition where pairs of adjacent lanes all across the roadway merge repeatedly until the desired roadway width has been attained. This smoother transition compared with the scenario where B lanes directly merge into L lanes distributes the flux more evenly over the roadway.
+
+
+\begin{figure}[h]
+\begin{minipage}{0.3\linewidth}
+  \centerline{\includegraphics[width=4.0cm]{1.png}}
+  \centerline{(a) Shape 1}
+\end{minipage}
+\hfill
+\begin{minipage}{.3\linewidth}
+  \centerline{\includegraphics[width=4.0cm]{2.png}}
+  \centerline{(b) Shape 2}
+\end{minipage}
+\hfill
+\begin{minipage}{.3\linewidth}
+  \centerline{\includegraphics[width=4.0cm]{3.png}}
+  \centerline{(c) Shape 3}
+\end{minipage}
+\caption{different shapes of toll}
+\label{meterial}
+\end{figure}
+
+Figure \ref{meterial} illustrates different shapes of the toll plaza following area
+In our common toll plaza model,we adopt the first type in Figure \ref{meterial}.
+
+\item{\textbf{Merging pattern}}
+
+In reality,the white lines drawn on the mainline to distinguish different lanes remain consistent along the roadway even during the merging process.Considering that there are more tollbooths egress lanes than main traffic lanes(B>L),thus,a certain lane of traffic can be regarded as corresponding to a single lane or multiple egress lanes.Then,it's logical that we decompose the merging area into L substructure.  Each substructure consists of a merging point(the place where tollbooth egress lanes and the main traffic lane meet)and Ai(1<=i<=L)egress lanes.
+They satisfies $\sum{} = B$
+We have various types of substructure.
+\begin{enumerate}[1)]
+\item
+Single-To-One(STO Model):1 egress lanes\&1 merging point
+\item
+Double-To-One(DTO Model):2 egress lanes\&1 merging point
+\end{enumerate}
+
+\begin{figure}
+\centering
+\includegraphics[width=12.0cm]{4.png}
+\includegraphics[width=12.0cm]{5.png}
+\caption{The top one is STO;The bottle one is DTO}
+\label{2}
+\end{figure}
+Theoretically,we can continue to list the scenarios where more than 2 egress lanes merge into one lane.But as more egress lanes merge into a merging point,more drivers are forced to crowd at a time.It's getting complicated for a driver to decide his next move which is more likely to cause congestion and accidents due to human errors. Besides,in a scenario like this, the merging area is often designed to be a smooth transition to guarantee multiple amalgamations.
+
+From above we can define merging pattern as the configurations of these 2 substructures.In section 5,we'll adjust the ratio of different sub structure in simulation to search for better alternatives.
+
+
+\item{\textbf{Size}}
+
+Size reflects the surface area of the road covering from rows of tollbooths to merging points.Based on the general assumptions, the width of single lane is a constant.So it's relevant when comparing different toll plazas. Thus we have the definition of size as:
+$$S=(B+L)*D/2$$
+where L is the amount of main traffic lanes, $B$ is the amount of tollbooth egress lanes,$D$ is the horizontal distance between a tollbooth and a merging point.
+
+In this trapezium area,$B$ and $L$ are regarded as the upper line and the lower line while $D$ is regarded as height.When $B$ and $L$ are fixed,the influencing factor left is D which will play a significant role in the whole simulation.We'll discuss it later.
+\end{itemize}
+
+\subsubsection{Drivers' Behavior Components}
+Vehicles have five kinds of velocity modes while moving on the road.Here we list them out containing additional assumptions to simplify the problem.
+\begin{itemize}
+\item
+\textbf{Acceleration}:Drivers will accelerate at a steady pace with a acceleration rate $a_+$ which is also a energy-saving behavior.\item
+\textbf{Moderate speed}:Drivers will maintain a constant driving speed 
+\item
+\textbf{Deceleration}:Drivers will decelerate at a steady and moderate pace with a deceleration rate $a_-$
+\item
+\textbf{Braking}:Drivers will sharply decelerate at a steady pace usually to avoid collision with a deceleration rate of abrake
+\item
+\textbf{Random Deceleration}:Drivers will decelerate at a steady pace with the deceleration rate of $a_-$ for 1 second with a probability of $p_{slow}$ due to accidental reasons like drinking coffee or answering phones.This velocity mode randomly occurs during the entire process.
+\end{itemize}
+
+Drivers will shift from this five velocity modes at different moments.The necessary thing to do next is to find the rules governing the shifting of velocity modes.The location is then able to be determined as an integral speed on time zone.We'll do it in section 4.3 after introducing the approach for analysis.
+
+\subsection{Model with Cellular Automaton}
+Whereas our earlier models approximate car flux as continuous, the cellular automaton simulation treats individual vehicles as distinct entities that behave according to well-defined simple rules. On account of the discrete model is based on an independent set of intuitions about the system and its behaviors, we propose the following assumptions:
+\begin{itemize}
+	\item
+	We assume that speed-changing does not cost additional reaction time. Additionally, we suppose that speed changes in a very little period, which means vehicles skip the uniform deceleration stage. This assumption helps a lot to build a cellular automaton.
+	\item
+	Each cell represents a $4m*4m$ area. The road's length is 31 $cells$ with 20 $cells$ of acceleration zone and 11 $cells$ of highway. A lane's width is 1 $cell$. We divide a multilane freeway into equally partitioned lanes. We choose a length of 124 $m$ to simulate because of the trade-off between time complexity and the completeness of the model. Also, each array of cells represents a lane.
+	\item
+	Every time-step represents 1 second. Such an assumption is made by nearly all cellular automaton techniques.
+	\item
+	We run 10000 time-steps and analyze the last 3600 steps. This ensures us to obtain steady-state conditions.
+	\item
+	While all vehicles have a trend to reach the maximum speed Vmax which we assume is 4 cells/s(57.6 $km/h$), every single vehicle randomly slows down with probability $p_slow$. This randomization is a characteristic of traffic flow.
+	\item
+	We assume the average acceleration of vehicles $a_+$ is 1 $cell/s$ and $a_-$ is -1 $cell/s$. Additionally, the maximum acceleration $a_{break}$ is 2 $cells/s$, which is 'the risk speed' by the way.
+\end{itemize}
+
+\subsection{Merging Process Model}
+The whole merging process can be divided into two parts:acceleration area and merging observation area. Here we overlook the distance difference between different lanes resulting from the curve shape of the merging area. We assume all lanes are straight lanes and covering  the same distance along the road.
+We have $$D=d_0+d_{merge}$$
+Where $d_0$ is the straight distance of acceleration area along the lane;
+   $d_{merge}$ is the straight distance of merging observation area along the lane;
+Drivers enter acceleration area first before merge observation area.
+The rules differ in two periods so we'll discuss them separately.
+
+\subsubsection{Acceleration Area}
+The following assumptions and terms are brought based on common sense to simplify our problems
+\begin{enumerate}[(1)]
+	\item
+	Drivers tend to drive as fast as possible in this period while considering safety.
+	\item
+	Drivers won't consider changing lanes or surpassing the front car in his lane.Rational drivers regard it a high acceleration period. Both of the behaviors mentioned are likely to trigger collision.
+	\item
+	Vehicles on other lanes have no effect on drivers' behaviors.
+	\item
+	The locations and velocity of vehicles behind a drivers' vision have no effect on his behavior.A rational driver mainly concentrates on his front to avoid distraction.
+\end{enumerate}
+
+Based on above,vehicles will stay in acceleration mode until it reaches its maximum speed.The velocity satisfies
+$$v_t=(a_+)*t,v_t<v_{max}$$
+where $v_t$ is the speed of the vehicle at time $t$;
+     $v_{max}$ is the maximum speed of the vehicle allowed on this part of the highway ;
+     $t$ is the accumulated time steps begins at the point when a vehicle begins to move out of the tollbooth;
+    
+     To put safety into consideration, a rational driver tends to keep a distance from his front car to avoid sudden collision called safety gap.In fact, the safety gap is often regarded as the same value as the current speed in drivers' mind,which we call the "1-1" rule.Through common sense we assume that a driver isn't able to detect the exact speed difference between himself and the front car, therefore he's more likely to adopt this rule to provide enough buffer space.Once the front car falls into the safety gap zone,the driver will shift into braking mode to avoid collision.
+Mathematically,
+if $v_t$>$gapf(t)$, then $v_{t+t'}=v_t-a_{brake}t'$,until $v_t''<=gapf(t'')$,it returns to its previous velocity mode
+  Then we have $x_t=integral v_t*t$
+where $x_t$ is the location on this lane at time $t$;
+   $gapf(t)$ is the distance between the back car and the front car at time $t$;
+   $t'$ is one time step
+   $t''$is the extra lasting time of the braking mode
+\subsubsection{Merging Observation Area}
+We define the merging observation area as a region where drivers will check out the situation of vehicles in surrounding lanes to get ready for the upcoming merging. In the previous acceleration area, drivers accelerate to obtain a higher speed considering that there's sufficient space in front to be prepared.
+
+From our general assumptions we know that rational drivers will always take safety into account. Thus it's credible for us to make the following hypotheses before we analyze drivers' behaviors in detail.
+\begin{enumerate}[(1)]
+	\item
+	Drivers won't accelerate in this period.Drivers are aware of how tough the merge process is so they avoid shifting into acceleration mode to be better prepared.
+	\item
+	A driver will only move into his corresponding traffic lane in order to avoid additional merging and unnecessary crash.In this case,the driver won't change into other main lanes and only merge with vehicles belonging to the same traffic lanes.Therefore, to analyze drivers' behaviors in each substructure of the merging area independently without considering the interactions within these substructures is reasonable.
+	\item
+	A car merges from each end of the straight egress lanes to the merging point does not cost additional time.Although we ponder each lane is a straight lane with the direction of the traffic flow,we ignore the additional distance that are covered at the direction perpendicular to the flux.
+\end{enumerate}
+
+
+\begin{itemize}
+	\item{\textbf{Values of dmerge}}
+
+	For a rational driver, he wants to keep a distance that allows for normal deceleration and some remaining buffer space.Thus,dmerge should satisfy 
+           $$d_{merge}>=v*v/2*a_-$$
+	To leave some buffer space,we suppose that all drivers share the same dmerge as $v_{max}*v_{max}/2*a_-$
+
+	\item{\textbf{STO Model(1 egress lanes\&1 merging point)}}
+
+	\begin{figure}[h]
+	\centering
+	\includegraphics[width=12.0cm]{6.png}
+	\caption{STO Model}
+	\label{3}
+	\end{figure}
+
+	Figure \ref{3} illustrates this OTO situation
+	Then we can introduce the following equations and inequalities:
+
+	$v_t=v_0$, the car stays at a moderate speed unless the safety gap triggers the deceleration mode like we mentioned in section 4.2.1.
+	if $v_t>gapf(t)$, then $v_{t+t'}=v_t-a_{brake}*t'$,until $v_{t''}<gapf(t'')$,it returns to its previous velocity mode.Unless it reaches the merging point first,
+      $$Integral v_t*t>=D$$
+	where $v_0$ is the velocity of vehicle at the point where the end of the acceleration period joins the start point of the merging observation period;
+
+	\item{\textbf{DTO Model(2 egress lanes\&1 merging point)}}
+
+	Based on our assumptions, the vehicles in this situation choose their behaviors considering both the front car in his own lane and one front car on adjacent lane in this sub structure.Two lanes are symmetric in analysis.
+
+	In this model,we add another assumption to complete our logic:
+
+	Drivers can sense the relative speed difference and locations much more accurate than the actual speed difference and distance between the front car and the back car. That is to say a rational driver will tend to choose his behavior based on his relative position and relatively velocity compared with another car.This is a safer way to guarantee the accuracy of the preceived information from the other car to help generate a decision.
+
+	\begin{enumerate}[i)]
+		\item
+		One car in front,One car at back.
+	\begin{figure}[h]
+	\centering
+	\includegraphics[width=12.0cm]{8.png}
+	\caption{DTO Model}
+	\label{4}
+	\end{figure}
+
+	Figure \ref{4} illustrates this situation.
+		If $v_f>=v_b$, allowing the front car to merge into the merging point first is the safest decision. Both the drivers will keep moving at a moderate speed.
+
+   Mathematically, $v_{b_t}=v_{b_0}$;
+
+   where $v_{b_t}$ is the velocity of the back car at time t in the merging observation area;
+
+	$v_{f_t}$ is the velocity of the front car at time t in the merging observation area;
+
+    $v_{b_0}$ is the velocity of the back car at the point where the end of the acceleration area joins the start point of the merging observation area;
+
+    $v_{f_0}$ is the velocity of the front car at the point where the end of the acceleration area joins the start point of the merging observation area;
+
+	If $v_f<v_b$,the driver will still let the front car to merge first.But to avoid possible rear-end accident,the back car will shift into deceleration mode while the front car keeps moving at his moderate speed.We can see that if the front car reach the merging point first,the back car will keep decelerating to this very moment and then moving at this steady speed.
+ 	 $$v_{b_t}=v_{b_0},v_{b_{t+t'}}=v_{b_0}-a_-t',v_{b_{t'+t''}}=v_{b_{t'}}$$
+	But there's a possibility that the back car will catch up with the front car while decelerating.
+
+	\item
+	Two cars with same position
+	\begin{figure}[h]
+	\centering
+	\includegraphics[width=12.0cm]{7.png}
+	\caption{Two cars with same position}
+	\label{5}
+	\end{figure}
+
+	Figure \ref{5} illustrates this situation.
+	If two cars have different speeds, they'll both keep moving at their initial moderate speeds to guarantee a safe merging process.
+
+	If two cars have the same speed,under this circumstance, both cars won't make a first move according to our previous logic.To avoid a dead circle here leading to a collision at the merging point which violates their rationality,we assume the cars in the upper lanes will shift into deceleration mode for one second and then shift into moderate speed mode since they're symmetrical.The other car remains in the moderate speed mode.
+
+	\item
+	One car in the area
+	\begin{figure}[h]
+	\centering
+	\includegraphics[width=12.0cm]{9.png}
+	\caption{One car in the area}
+	\label{6}
+	\end{figure}
+	Figure \ref{6} illustrates this situation.
+
+	In this circumstance,the empty lane contributes nothing.This model is transformed into a STO Model which we analyzed above.
+
+	\end{enumerate}
+\end{itemize}
+
+     This rule for the shifting of velocity modes consists of a closed system model.The final missing step is to determine how the vehicles flow into this system, which will be discussed next.
+
+\subsection{Open Boundary Conditions}
+There are the flow-in boundary and the flow-out boundary.The former one lies in the tollbooths while the latter one lies in the merging point.
+\subsubsection{Flow-In Boundary}
+Considering that the amount of traffic is stochastic and the input of the system is discrete, a generally used approach is to model the input of vehicles before the "fan-in"area as a Poisson process. Consequently, we suppose that the number of vehicles flowing in from the starting point in the mainline in any interval of length t is Poisson-distributed with mean λt.
+   
+   In our model,we mainly focus on the "fan-out" area so what's crucial to our model is the traffic flux out of the tollbooths which counts as our input.To greatly highlight the influence different design of merging area have on the traffic flux in the merging process,we omit the influence the early queuing mechanism in the "fan-in"area.Furthermore,there's an extra tolling delay at each tollbooth.
+
+   In a word, the number of vehicles flowing out of the tollbooths any interval of length ($t+t_{average}$) is Poisson-distributed with mean $\lambda$t.
+\subsubsection{Flow-Out Boundary}
+The vehicles shift into acceleration mode right after the merging point.
+  
+    From above,the location of each vehicle in the entire following area at any given moment can be theoretically determined.The entire rule is constructed.
+
+ \subsection{Variables and Criteria}
+ We choose number of tollbooths(B) and the straight distance between a tollbooth and a merging point(D) as our variables.We consider the number of traffic mainlines(L) are fixed. To perform a overall analysis of the toll plaza design, we propose the following criteria:
+ \begin{enumerate}[(1)]
+\item{\textbf{Accident Prevention}}
+:We do not consider the occurrence of accidents in our simulation, since we view accidents as abnormal events and it is difﬁcult to consider abnormal events in microscopic models.Instead,we use the probability of $p_{risk}$ as an indicator of safety.The value of $p_{risk}$ increases by $1/N_{in}$ when a vehicle shift into the braking mode.It measures the possibility for a vehicle to shift into the braking mode.If this happens in our simulation, we assume that it is more likely to cause an accident in reality.
+\item{\textbf{Throughput}}
+:We define the number of vehicles per hour passing the point where the end of the plaza joins the $L$ outgoing traffic lanes as $N$ to indicate throughput. Based on our assumptions, we can decompose the merging area as $L$ substructures and each one can be analyzed independently.We define $Ni$ as the the throughput in $i$th substructure, then we have $\sum{Ni} = N$.
+\item{\textbf{Numbers of Delayed Cars}}
+The bottleneck of merging process is likely to trigger the situation where the total flow exiting from the tollbooths exceeds the capacity of the downstream highway.Therefore, the number of delayed cars which is a measurement of capacity drop qualifies as a reflection of congestion level and toll plaza efficiency.We define the numbers of delayed cars as
+      $$N_{delay}=N_{in}-N$$
+\item{\textbf{Cost}}
+:A sensible policy for the operators of the highway not only consider the efficiency of the system but the total cost to put into practice as well.Cost consists of the construction of the tollbooths and lanes,maintenance of the toll plazas and human labor cost.Statistics of the New Jersey Turnpike Authority suggests that the average prime cost of the road construction estimates up to approximately \$10,000,000 per mile,and the average annual operation cost for a human-staffed tollbooth is \$180,000.Even though we take labor cost into consideration,its contribution to the total cost is extremely minor. Accordingly, it's valid for us to construct a proportional relation between cost and the size.
+     $$C=W*S=W*(B+L)*D/2,$$ 
+where $C$ is the total cost of the design;
+$W$ is the coefficient standing for cost per unit of area;
+\end{enumerate}
+
+\subsection{Simulation Results}
+In this section,we will run several simulations with the method of cellular automaton to evaluate the common toll plaza design we stated previously and test how our variables influence each criteria by altering one at a time.
+
+We simulate a one hour period containing $3600$ time steps.Through that,we can get the calculation result of each criterion.
+\subsubsection{Accident Prevention}
+	\begin{figure}[h]
+	\centering
+	\includegraphics[width=10.0cm]{10.png}
+	\caption{risk under different values of D and different amounts of tollbooths(B)}
+	\label{7}
+	\end{figure}
+
+We can see from Figure 8 that accident tends to take place more frequently with $B$ growing. In this case, vehicles merge from more directions into exit with lanes of fixed number, so drivers are placed into more dangerous situation. Additionally, the possibility of accident slightly increases when B is small, and increases sharply otherwise. It proves that the longer the acceleration zone is, the faster those vehicles are. Hence large number of $B$ or $D$ may raise the risk in tollbooths.
+
+\subsubsection{Throughput}
+	\begin{figure}[h]
+	\centering
+	\includegraphics[width=10.0cm]{11.png}
+	\caption{N under different values of straight distance(D) and different amounts of tollbooths(B)}
+	\label{8}
+	\end{figure}
+
+As is shown in Figure \ref{8} , what matters to the total number of vehicles passing by is the value of B while the length of D is nearly irrelevant so as to the result. More tollbooths means greater capacity of filtering the vehicle stream and bearing the traffic congestion. Accordingly, B is of vital significance to the tollbooths' throughput.
+
+\subsubsection{Numbers of delayed cars}
+	\begin{figure}[h]
+	\centering
+	\includegraphics[width = 10.0cm]{12.png}
+	\caption{N delay under different values of straight distance(D) and different amounts of tollbooths(B)}
+	\label{9}
+	\end{figure}
+
+Although more tollbooths can greatly strengthen the tollbooths' capacity of dealing with vehicle flow, it may worsen the traffic delay. As is shown in Picture \ref{9}, the number of delayed vehicles in more tollbooths tends to be larger than others.
+
+\subsubsection{Cost}
+	\begin{figure}[h]
+	\centering
+\begin{minipage}{0.4\linewidth}
+  \centerline{\includegraphics[width=6.0cm]{13.png}}
+  \centerline{(a) Shape 1}
+\end{minipage}
+\hfill
+\begin{minipage}{.4\linewidth}
+  \centerline{\includegraphics[width=6.0cm]{14.png}}
+  \centerline{(b) Shape 2}
+\end{minipage}
+	\caption{Cost}
+	\label{10}
+	\end{figure}
+The overall cost is proportional to the length of the Straight Distance and numbers of tollbooths which meets our expectations.Lowering the straight distance D and numbers of tollbooths B to reduce cost is one of the dimensions of our optimal goal for better solutions without considering other criteria.The black dots marked in Figure \ref{10} represent the common type of design we choose.
+
+\subsubsection{Performance of Common Design}
+
+From the above curve mentioned in section 4.6,we can obtain the calculations under 4 criteria of our commonly toll plaza design($L=4,B=7,D=20$,no transition)
+% \begin{table}
+% \centering
+% \begin{tabular}{|$p_{risk}$|$N$|$N_{delay}$|$Cost/W$|}
+% \hline
+% 0.8 & 920 & 5 & 110
+% \hline
+% \end{tabular}
+% \caption{Some Letters.}
+% \label{alpha}
+% \end{table}
+\begin{table}
+\centering
+\begin{tabular}{|l|l|l|l|}
+\hline
+
+$p_{risk}$ & $N$ & $N_{delay}$ & $Cost/W$\\
+\hline
+0.8 & 920 & 5 & 110\\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Other Possible Factors}
+There are some other possible factors and parameters we fail to discuss or introduce in order to simplify our model. We'll list a few of them and briefly explain their influence.
+\begin{itemize}
+\item{Different kinds of vehicles}
+
+Vehicles moving on the highway is actually a combination of cars,buses and trucks.Buses and trucks have less moderate speed,acceleration rate,deceleration rate and braking deceleration rate than cars.Under our merging rules,the time pattern for the shifting of velocity mode can be altered.It's conceivable to influence the simulation result.
+\item{Reaction time for driver}
+
+Drivers are human beings who are unable to make instantaneous judgments.They need a reaction time to shift from different velocity modes.Forasmuch our merging rules can be "delayed" to some extent which may lead to higher values of $risk_{count}$.
+\end{itemize}
+
+
+
+\section{Evaluation:Improved solution for toll plaza design}
+\subsection{Description of Improved Model}
+Our conclusions in section 4.6 provide theoretical possibilities for improved solution on every criterion dimension.By modifying or combining these traits,we propose the following 2 possible improved solutions.
+\begin{itemize}
+\item
+B=7,L=4,D=25
+\item
+B=5,L=4,D=20
+\item
+B=6,L=4,D=15
+\end{itemize}
+
+We overlook the transition type of design in this section which can be regarded as an adjust of shape.This smooth transition will generate multiple acceleration areas and multiple merging points which have different locations.
+
+Each solution focues on optimizing a certain dimension,we have to evaluate the overall performance to judge whether the better solutions exist or not.The main challenge of this judging process is that we can obtain different results using different criteria. If we want to obtain a unique answer, we have to combine criteria to get a new, unique criterion. The relative importance of the criteria is hard to determine. We implement a fuzzy synthetic evaluation (FSE) here to set up the evaluation system.
+\subsection{Evaluation System}
+FSE is a multiple-criteria-decision-making method. It can determine the weights of each criterion based on the data only. One way to determine the weights is the coefficient of variation method. If criterion can differentiate the rules evaluated, the method will assign a large weight to the criterion. We use this technique to analyze the performance of each design.
+\subsubsection{Identify Alternatives and Attributes}
+In our problem, the alternatives are the four solutions and the attributes are the four criteria. The values of each attribute of each alternative are listed as follows:
+
+\begin{table}
+\centering
+\begin{tabular}{|l|l|l|l|l|}
+\hline
+
+ &$p_{risk}$ & $N$ & $N_{delay}$ & $Cost/W$\\
+\hline
+B=7,L=4,D=20 & 0.8 & 920 & 5 & 110\\
+\hline
+B=7,L=4,D=25&0.78&900&4&137.5\\
+\hline
+B=5,L=4,D=20&0.7&826&0&90\\
+\hline
+B=6,L=4,D=15&0.75&825&3&75\\
+\hline
+\end{tabular}
+\end{table}
+
+Then we derive the ideal alternative from Table
+\subsubsection{Determine Fuzzy Evaluation Matrix}
+The membership function is defined as
+Then we have the fuzzy evaluation matrix
+\begin{equation*}
+R = 
+\begin{pmatrix}
+1.00 & 0.00 & 1.00 & 0.56\\
+0.80 & 0.21 & 0.80 & 1.00\\
+0.00 & 0.99 & 0.00 & 0.24 \\
+0.50 & 1.00 & 0.60 & 0.00
+\end{pmatrix}
+\end{equation*}
+
+Using coefficient of variation method, we define as:
+Then we calculate the weighted vector
+\begin{equation*}
+w = 
+\begin{pmatrix}
+0.0526 & 0.0520 & 0.6563 &0.2391
+\end{pmatrix}
+\end{equation*}
+
+\subsubsection{Aggregate using a fuzzy operator}
+Then we use a fuzzy operator to aggregate and obtain the relative deviation.
+The relative deviation measures the distance between a specific alternative to
+the ideal alternative. The lower the value is, the better the alternative is.
+
+\subsection{The Results and Conclusions}
+The relative deviation in both cases are listed below
+Table 5 Relative deviations of different design 
+
+   From the design,we know that the common toll plaza performs the worst among the 4 solutions while the design where B=5,L=4,D=20 is the best.
+
+\textbf{We can conclude that there are definitely better solutions existing except the common one through altering B and D.}
+
+   But whether we adopt this “best” one is still with doubt because we fail to consider the influence of the flow-in traffic situations. We need to examine them in different traffic density situation to draw a more comprehending conclusion, including the light traffic and the heavy traffic.We'll discuss it in the next section.
+
+
+
+\section{Further Discussions}
+\subsection{Model Evaluation in Light and Heavy Traffic}
+To research our solution in light and heavy traffic,we need to define what qualifies as light traffic and what qualifies as heavy traffic first.Theoretically,the density of the traffic situation is strongly related to the distribution of the cars. In our case,it's about the expected value $\lambda$ in the Possion distribution.Initially we assume $\lambda$ to be 4 which actually indicates a relatively light traffic.
+
+   Here we fix B to be a constant 7 to emphasize the study of λ.We have the curve as followed:
+	\begin{figure}[h]
+	\centering
+	\includegraphics[width = 10.0cm]{16.png}
+	\caption{N delay under different straight distance and traffic density}
+	\label{15}
+	\end{figure}
+   The number of delayed cars is a reflection of the level of traffic congestion.In the curve,less average number of delayed cars result from less values of $\lambda$ which fits our common sense.Therefore it's sane to assume $\lambda$ to be 7 and 4 so as to indicate  heavy traffic and light traffic.We can also see that in a heavy traffic,greater straight distance can help diminish the congestion while in lighter traffic the relationship between D and N-delay is unclear and subtle.
+
+    After determining light and heavy traffic, then we can apply FSE to test the performance of the previous 4 rules.
+
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|l|l|}
+\hline
+	&B=7,L=4,D=20&B=7,L=4,D=25&B=5,L=4,D=20&B=6,L=4,D=15\\
+	\hline
+light&0.84&0.82&0.11&0.47\\
+\hline
+heavy&0.35&0.25&0.82&0.56\\
+\hline
+\end{tabular}
+\end{table}
+
+
+Table  Relative deviations of different rules in light \& heavy traffic
+
+We can see that the design where B=7,L=4,D=25 performs the best in heavy traffic,differing from the light traffic.Because in light traffic,there's not enough cars to cause congestion in the first place.Solutions with the extra lanes are useless to some extent and add additional road construction cost which leads to bad performance;Yet in heavy traffic,the extra lanes lead to improved performance.
+
+   Accordingly, we draw the following conclusion:
+\begin{itemize}
+\item
+In light traffic,less egress lanes and tollbooths are in need 
+\item
+In heavy traffic,solutions with more tollbooths and great straight distance are recommended. 
+\end{itemize}
+
+We'll adopt a optimal solution where B=6,L=4,D=20 to fit with both cases. 
+
+\subsection{Modifications for Autonomous Vehicles in the traffic mix}
+Since the autonomous vehicles are armed with advanced techniques such as radar, lidar, GPS, odometry, and computer vision, they can detect surroundings more acutely and accurately, which provides a possibility for us to improve speed limits ,increase road capacity (due to decreased need for safety gaps ) ,minimize traffic congestion, and reduce traffic collisions caused by human errors, such as delayed reaction time, tailgating and rubbernecking.
+
+To cope with the mix of autonomous vehicles,if we maintain our solutions,these self-driving cars will randomly mix in the traffic flux.One of the substituted solutions  is to establish or assign some specialized lanes for autonomous vehicles.
+
+In our model,we adjust 30\% of the cars to be autonomous and their safety gap reduces 50\%. We adopt solutions with 6 tollbooths and λ=5as an average of light and heavy traffic.We simulate and compare the initial solutions,the substituted solutions to situations without autonomous cars to see whether they meet our expectations. To complete our logic,we don't consider extra money used to build the roadside detection system to support autonomous cars. We deem that the rest of the cost are the same so there's no need to compare in this criterion.
+
+We get the calculation result in the following tables:
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|l|}
+\hline
+
+ &$p_{risk}$ & $Throughput(N)$ & $Numbers of delayed cars(N delay)$\\
+\hline
+initial&0.72&830&2\\
+\hline
+substituted&0.40&980&0\\
+\hline
+without&0.75&825&3\\
+\hline
+\end{tabular}
+\end{table}
+
+
+From the above table ,we find that the prisk of the initial decreases slightly while the substituted decreases sharply.Besides,the throughput and numbers of delayed cars of the initial increase slightly while the substituted increase sharply.It proves that simply mixing more autonomous cars will help assure safety and minimize traffic congestion to some extent but not as great as benefits of the former while acting as a whole will maximize their traits.
+
+What's more, if a queue of autonomous vehicles is formed, it will not only improve the throughput as a whole rather than a single car but also the utilization of fuels therefore decreases the cost.
+
+Thus,we suggest this additional solution of establishing or assigning some specialized lanes for autonomous vehicles combining with the improved solution we chose initially be implemented based on above analysis.
+
+\subsection{Modifications for Different Configurations of Tollbooths}
+Electronic toll collection (ETC) determines whether the cars passing are enrolled in the program, alerts enforcers for those that are not, and electronically debits the accounts of registered car owners without requiring them to stop. Hence, ETC emerges hand in hand with a rise in speeds after tolls, that is to say, the vehicle will be granted an initial velocity while driving into our model. There is also a dramatic reduction in delay at the tollbooths, resulting in the decrease of $t_{average}$. In addition, the rising speed may inevitably lead to a higher risk on accidents, which alerts us to enforce accident prevention strategies. Exact-change (automated) tollbooths pale in reduction in delay compared with ETC. And the initial velocity is 0 both in Exact-change (automated) tollbooths and conventional (human-staffed) tollbooths situations. We seek to investigate if there is an optimal proportion in configurations of tollbooths in the mixed-mode toll collection system .
+
+Different proportion of configurations of tollbooths will lead to different $t_{average}$.We adjust $t_{average}$ within a relatively wide range and assign q lanes with an initial velocity to reflect overall different configurations.We define the initial velocity to be 5 cells/s which is the maximum speed ETC allows for passing.We assume B=6,L=4,$\lambda$=5 with no transition as an average consideration of light and heavy traffic.We overlook the cost of different types of tollbooths and only compare prisk,throughput and the number of delayed cars.
+We get the calculation result listed as the following table:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|l|l|}
+\hline
+ &$p_{risk}$ & $N$ & $N_{delay}$\\
+\hline
+taverage=4s,q=1&0.76&840&3\\
+\hline
+taverage=1s,q=3&0.86&960&2\\
+\hline
+taverage=10s,q=0&0.55&640&7\\
+\hline
+\end{tabular}
+\end{table}
+In the cases with more ETC,we observe a higher prisk,N and a less N delay;In the cases with more taverage,we observe a trend of the increase in N and decrease in N delay.Thus,the impact is confirmed.
+		
+
+
+
+\section{Sensitivity Analysis}
+Some inputs of our model may be hard to obtain or there might be some uncertainty in our inputs. Both these kinds of deviation might influence the results of our model. To test the robustness of our model, we implement a sensitivity analysis considering both light traffic and heavy traffic cases. The analysis proves that our model does not demonstrate a chaotic behavior, showing a good sensitivity.
+\subsection{Probability of Random Deceleration($p_{slow}$)}
+  pslow describes the random deceleration behavior of drivers.Obviously,this parameter is difficult to obtain and it may change severely under different circumstances. In our approach, we assume it to be 0.3 since very few datas on this matter are available. We change it by up to 20\% and the risk possibility in heavy traffic shows a largest 10.6\% deviation, which is acceptable.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|l|l|}
+\hline
+
+ &$p_{risk}$ & $N$ & $N_{delay}$ & $Cost$\\
+\hline
+Light &4.6\%&3.5\%&0\%&0\%\\
+\hline
+heavy&10.6\%&8.4\%&0\%&0\%\\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{$d_{merge}$(length of Merging Observation Area)}
+We calculated $d_{merge}$ as the safest distance to guarantee a fluent merging process.Yet on freeways this value may vary due to the instant judgment of drivers.Therefore we change it by up to 20\% but every criterion changes little.
+\section{Strengths and weaknesses}
+
+%============================模型=优点====================================
+\subsection{Strengths}
+\begin{itemize}
+\item
+Our models are fairly robust to the changes in parameters based on sensitivity analysis. It means a slight change in parameters will not cause a significant change in the result.
+\item
+Different types of vehicles are taken into consideration, and the mixing ra-
+tio is based on actual data. We consider the length of vehicles and different
+maximum speeds which makes the model closer to reality.
+\item
+We come up with various criteria to compare different situations. Hence
+an overall comparison can be made based on these criteria.
+\item
+Our models are capable of simulating the situation in real life. The results
+also agree with common sense and life experience.
+\item
+Ease of implementation. A complex problem is simulated using very simple rules.
+\end{itemize}
+
+%============================模型=缺点====================================
+\subsection{Weaknesses}
+\begin{itemize}
+\item
+We disallow lane-changing except at merge points in the merging area to guarantee the safest behavior. But the most rational driver is likely to switch lanes upon realizing that he is in a slow driving line.Lane-changing behaviors may be over-simplified in our model.
+\item
+We constrain what information the drivers can perceive from surroundings, especially the front car.Information a driver utilize to generate decisions is predigested.
+\item
+We overlook the distance differences resulting from the actual curve of the road between lanes. Our model will be much likely influenced facing merging lanes with a huge bend angle.
+\item
+Two essential weaknesses of our model are that all cars behave the same and all tollbooth lanes are homogeneous
+\end{itemize}
+
+
+\begin{thebibliography}{99}
+%\addcontentsline{toc}{section}{References}
+\bibitem{1} Wikipedia Barrier toll system, 
+https://en.wikipedia.org/wiki/Barrier toll system
+\bibitem{2} Guoyan Zhou, Menglin Tan,Xinyan Zhang,
+A Research on the Intra-Regional Accessibility and Economic Development in the Cardiff City Region,China City Planning Review Vol.23,NO.4,2014
+\bibitem{3} http://corpinfo.panynj.gov/documents/update-on-replacement-of-toll-collection-system/
+\bibitem{4} Zhen Peng ,Lihong He,Fitting
+Test for Distribution of Vehicle Arrival of Expressway Toll Stations(in Chinese)
+\bibitem{5} Anastasia D. Spiliopoulou, loannis Papamichail, Markos Papa Georgiou,
+Toll Plaza Merging Traffic Control for Throughput Maximization
+\bibitem{6} Wikipedia. Coefficient of variation
+https://en.wikipedia.org/wiki/Coefficient of variation
+\bibitem{7} MBAlib: fuzzy synthetic evaluation:
+http://wiki.mbalib.com/wiki
+\bibitem{8} Nagel, K., \& Schreckenberg, M. (1992).
+A cellular automaton model for freeway traffic. Journal de Physique I, 2(12), 2221-2229.
+\bibitem{9} Knospe, W., Santen, L., Schadschneider, A., \& Schreckenberg, M. (1999).
+Disorder effects in cellular automata for two-lane traffic. Physica A: Statisti-cal Mechanics and its Applications, 265(3), 614-633.
+\bibitem{10} Wikipedia. Autonomous car: 
+https://en.wikipedia.org/wiki/Autonomous car
+\end{thebibliography}
